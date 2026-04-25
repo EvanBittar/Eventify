@@ -1,0 +1,21 @@
+# Ignore build artifacts
+bin/
+obj/
+
+# Ignore user-specific files
+.vs/
+.idea/
+*.user
+
+# Ignore settings that might contain passwords
+appsettings.json
+appsettings.Development.json
+Eventify-High-Performance-Event-Management-API.http
+Eventify-High-Performance-Event-Management-API.sln
+# Unit test results
+[Tt]est[Rr]esult*/
+
+# Build results
+[Bb]in/
+[Oo]bj/
+Properties

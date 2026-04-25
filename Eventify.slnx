@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Eventify-High-Performance-Event-Management-API/Eventify-High-Performance-Event-Management-API.csproj" />
+  <Project Path="Eventify.Tests/Eventify.Tests.csproj" />
+</Solution>
