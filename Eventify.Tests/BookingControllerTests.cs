@@ -83,7 +83,7 @@ namespace Eventify.Tests
             var result = await _controller.CancelBooking(bookingid);
 
             var okResult = Assert.IsType<OkObjectResult>(result);
-            dynamic data = okResult.Value;
+            dynamic data = okResult.Value!;
             string message = data.GetType().GetProperty("Message").GetValue(data, null);
             Assert.Equal("Booking cancelled successfully.", message);
         }
@@ -113,7 +113,7 @@ namespace Eventify.Tests
             var result = await _controller.CancelBooking(bookingid);
 
             var badRequestResult = Assert.IsType<BadRequestObjectResult>(result);
-            dynamic data = badRequestResult.Value;
+            dynamic data = badRequestResult.Value!;
             string message = data.GetType().GetProperty("Message").GetValue(data, null);
             Assert.Equal("Could not cancel booking or booking not found.", message);
         }
