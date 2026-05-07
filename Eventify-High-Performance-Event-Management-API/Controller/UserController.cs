@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Eventify_High_Performance_Event_Management_API.Repository.Interfaces;
 using Eventify_High_Performance_Event_Management_API.Services.Interfaces;
 using AutoMapper;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Eventify_High_Performance_Event_Management_API.Controller
 {
@@ -86,6 +87,7 @@ namespace Eventify_High_Performance_Event_Management_API.Controller
         }
 
         [HttpPost("Login")]
+        [EnableRateLimiting("LoginPolicy")]
         public async Task<IActionResult> Login(UserToLoginDto userLogin)
         {
             _logger.LogInformation("🔐 Login attempt for email {Email}", userLogin.Email);

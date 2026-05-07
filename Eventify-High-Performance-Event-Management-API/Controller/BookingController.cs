@@ -4,6 +4,7 @@ using Eventify_High_Performance_Event_Management_API.Repository.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Eventify_High_Performance_Event_Management_API.Controller
 {
@@ -68,6 +69,7 @@ namespace Eventify_High_Performance_Event_Management_API.Controller
         }
 
         [HttpPost("CreateBooking")]
+        [EnableRateLimiting("BookingPolicy")]
         public async Task<IActionResult> CreateBooking(int eventId)
         {
             var UserId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;

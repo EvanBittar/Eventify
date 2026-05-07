@@ -1,5 +1,7 @@
+using System.Threading.RateLimiting;
 using Eventify_High_Performance_Event_Management_API.Helpers;
 using Eventify_High_Performance_Event_Management_API.Middlewares;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.OpenApi;
 using Serilog;
 using Swashbuckle.AspNetCore.Filters;
@@ -12,6 +14,43 @@ Log.Logger = new LoggerConfiguration()
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Host.UseSerilog();
+builder.Services.AddRateLimiter(options =>
+{
+    options.AddFixedWindowLimiter("GeneralPolicy", opt =>
+    {
+        opt.PermitLimit = 30;
+        opt.Window = TimeSpan.FromMinutes(1);
+        opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        opt.QueueLimit = 0;
+    });
+
+    options.AddFixedWindowLimiter("LoginPolicy", opt =>
+    {
+        opt.PermitLimit = 5;
+        opt.Window = TimeSpan.FromMinutes(1);
+        opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        opt.QueueLimit = 0;
+    });
+
+    options.AddFixedWindowLimiter("BookingPolicy", opt =>
+    {
+        opt.PermitLimit = 10;
+        opt.Window = TimeSpan.FromMinutes(1);
+        opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+        opt.QueueLimit = 0;
+    });
+
+    options.OnRejected = async (context, cancellationToken) =>
+    {
+        context.HttpContext.Response.StatusCode = 429;
+        await context.HttpContext.Response.WriteAsync(
+            "Too many requests. Please try again later.", cancellationToken);
+
+        Log.Warning("🚫 Rate limit exceeded for {Path} from IP {IP}",
+            context.HttpContext.Request.Path,
+            context.HttpContext.Connection.RemoteIpAddress);
+    };
+});
 
 // Add services to the container.
 builder.Services.AddControllers();
@@ -47,12 +86,12 @@ if (app.Environment.IsDevelopment()) {
     app.UseCors("ProdCors");
     app.UseHttpsRedirection();
 }
+app.UseRateLimiter();
 
+app.UseSerilogRequestLogging();
 app.UseAuthentication();
 app.UseAuthorization();
-
 app.UseMiddleware<EmailVerificationMiddleware>();
-
 app.MapControllers();
 
 try
