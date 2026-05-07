@@ -1,9 +1,17 @@
 using Eventify_High_Performance_Event_Management_API.Helpers;
 using Eventify_High_Performance_Event_Management_API.Middlewares;
 using Microsoft.OpenApi;
+using Serilog;
 using Swashbuckle.AspNetCore.Filters;
 
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .WriteTo.Console()
+    .WriteTo.File("Logs/eventify.log", rollingInterval: RollingInterval.Day)
+    .CreateLogger();
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Host.UseSerilog();
 
 // Add services to the container.
 builder.Services.AddControllers();
@@ -46,4 +54,17 @@ app.UseAuthorization();
 app.UseMiddleware<EmailVerificationMiddleware>();
 
 app.MapControllers();
-app.Run();
+
+try
+{
+    Log.Information("🚀 Eventify API Starting...");
+    app.Run();
+}
+catch (Exception ex)
+{
+    Log.Fatal(ex, "❌ Application failed to start");
+}
+finally
+{
+    Log.CloseAndFlush();
+}

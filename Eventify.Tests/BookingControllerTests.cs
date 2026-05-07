@@ -2,6 +2,7 @@ using System.Security.Claims;
 using Eventify_High_Performance_Event_Management_API.Controller;
 using Eventify_High_Performance_Event_Management_API.Dtos;
 using Eventify_High_Performance_Event_Management_API.Models;
+using Microsoft.Extensions.Logging;
 using Eventify_High_Performance_Event_Management_API.Repository.Interfaces;
 using Eventify_High_Performance_Event_Management_API.Services;
 using Microsoft.AspNetCore.Http;
@@ -15,6 +16,7 @@ namespace Eventify.Tests
         private readonly Mock<IBookingRepository> _mockRepo;
         private readonly Mock<IEmailService> _mockEmailService;
         private readonly Mock<IUserRepository> _mockUserRepo;
+        private readonly Mock<ILogger<BookingController>> _mockLogger;
         private readonly BookingController _controller;
 
         public BookingControllerTests()
@@ -22,16 +24,18 @@ namespace Eventify.Tests
             _mockRepo = new Mock<IBookingRepository>();
             _mockEmailService = new Mock<IEmailService>();
             _mockUserRepo = new Mock<IUserRepository>();
+            _mockLogger = new Mock<ILogger<BookingController>>();
 
             _controller = new BookingController(
                 _mockRepo.Object,
                 _mockEmailService.Object,
-                _mockUserRepo.Object
+                _mockUserRepo.Object,
+                _mockLogger.Object
             );
 
             var user = new ClaimsPrincipal(new ClaimsIdentity(new Claim[]
             {
-                new Claim(ClaimTypes.NameIdentifier, "1")
+        new Claim(ClaimTypes.NameIdentifier, "1")
             }, "mock"));
 
             _controller.ControllerContext = new ControllerContext
