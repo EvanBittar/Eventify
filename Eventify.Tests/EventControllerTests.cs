@@ -8,18 +8,21 @@ using Eventify_High_Performance_Event_Management_API.Dtos;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
+using Microsoft.Extensions.Logging;
 
 namespace Eventify.Tests
 {
     public class EventControllerTests
     {
         private readonly Mock<IEventRepository> _mockRepo;
+        private readonly Mock<ILogger<EventController>> _mockLogger;
         private readonly EventController _controller;
 
         public EventControllerTests()
         {
             _mockRepo = new Mock<IEventRepository>();
-            _controller = new EventController(_mockRepo.Object);
+            _mockLogger = new Mock<ILogger<EventController>>();
+            _controller = new EventController(_mockRepo.Object, _mockLogger.Object);
         }
 
         [Fact]
@@ -45,9 +48,9 @@ namespace Eventify.Tests
             var returnedEvents = Assert.IsAssignableFrom<IEnumerable<Event>>(okResult.Value);
             var firstEvent = returnedEvents.First();
 
-            Assert.Equal(50.00m,firstEvent.Price);
-            Assert.Equal(4.5m,firstEvent.AverageRating);
-            Assert.Equal(10,firstEvent.ReviewsCount);
+            Assert.Equal(50.00m, firstEvent.Price);
+            Assert.Equal(4.5m, firstEvent.AverageRating);
+            Assert.Equal(10, firstEvent.ReviewsCount);
         }
 
         [Fact]

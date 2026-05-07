@@ -6,23 +6,25 @@ using Microsoft.AspNetCore.Http;
 using Eventify_High_Performance_Event_Management_API.Controller;
 using Eventify_High_Performance_Event_Management_API.Repository.Interfaces;
 using Eventify_High_Performance_Event_Management_API.Dtos;
+using Microsoft.Extensions.Logging;
 
 namespace Eventify.Tests
 {
     public class ReviewControllerTests
     {
         private readonly Mock<IReviewRepository> _mockRepo;
+        private readonly Mock<ILogger<ReviewController>> _mockLogger;
         private readonly ReviewController _controller;
 
         public ReviewControllerTests()
         {
             _mockRepo = new Mock<IReviewRepository>();
-            _controller = new ReviewController(_mockRepo.Object);
+            _mockLogger = new Mock<ILogger<ReviewController>>();
+            _controller = new ReviewController(_mockRepo.Object, _mockLogger.Object);
 
-            // محاكاة المستخدم المسجل
             var user = new ClaimsPrincipal(new ClaimsIdentity(new Claim[]
             {
-                new Claim(ClaimTypes.NameIdentifier, "1")
+        new Claim(ClaimTypes.NameIdentifier, "1")
             }, "mock"));
 
             _controller.ControllerContext = new ControllerContext

@@ -8,6 +8,7 @@ using Eventify_High_Performance_Event_Management_API.Dtos;
 using Eventify_High_Performance_Event_Management_API.Repository.Interfaces;
 using Eventify_High_Performance_Event_Management_API.Services;
 using Eventify_High_Performance_Event_Management_API.Services.Interfaces;
+using Microsoft.Extensions.Logging;
 
 namespace Eventify.Tests
 {
@@ -16,6 +17,7 @@ namespace Eventify.Tests
         private readonly Mock<IUserRepository> _mockRepo;
         private readonly Mock<IAuthService> _mockAuthService;
         private readonly Mock<IMapper> _mockMapper;
+        private readonly Mock<ILogger<UserController>> _mockLogger;
         private readonly UserController _controller;
 
         public UserControllerTests()
@@ -23,11 +25,13 @@ namespace Eventify.Tests
             _mockRepo = new Mock<IUserRepository>();
             _mockAuthService = new Mock<IAuthService>();
             _mockMapper = new Mock<IMapper>();
+            _mockLogger = new Mock<ILogger<UserController>>();
 
             _controller = new UserController(
                 _mockRepo.Object,
                 _mockAuthService.Object,
-                _mockMapper.Object
+                _mockMapper.Object,
+                _mockLogger.Object
             );
         }
 
@@ -54,12 +58,12 @@ namespace Eventify.Tests
             var password = "password123";
             var passwordHash = BCrypt.Net.BCrypt.HashPassword(password);
 
-            var fakeUser = new User 
-            { 
-                UserId = 1, 
-                Email = email, 
-                PasswordHash = passwordHash, 
-                IsAdmin = false 
+            var fakeUser = new User
+            {
+                UserId = 1,
+                Email = email,
+                PasswordHash = passwordHash,
+                IsAdmin = false
             };
 
             _mockRepo.Setup(repo => repo.GetUserByEmailAsync(email))
@@ -88,10 +92,10 @@ namespace Eventify.Tests
             var email = "test@test.com";
             var passwordHash = BCrypt.Net.BCrypt.HashPassword("correct_pass");
 
-            var fakeUser = new User 
-            { 
-                Email = email, 
-                PasswordHash = passwordHash 
+            var fakeUser = new User
+            {
+                Email = email,
+                PasswordHash = passwordHash
             };
 
             _mockRepo.Setup(repo => repo.GetUserByEmailAsync(email))
