@@ -3,6 +3,7 @@ using Eventify_High_Performance_Event_Management_API.Models;
 using Eventify_High_Performance_Event_Management_API.Repository.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace Eventify_High_Performance_Event_Management_API.Controller
 {
@@ -13,20 +14,35 @@ namespace Eventify_High_Performance_Event_Management_API.Controller
     {
         private readonly IEventRepository _eventRepository;
         private readonly ILogger<EventController> _logger;
+        private readonly IMemoryCache _cache;
 
-        public EventController(IEventRepository eventRepository, ILogger<EventController> logger)
+        private const string AllEventsCacheKey = "AllEvents";
+        private const string DashboardStatsCacheKey = "DashboardStats";
+
+        public EventController(IEventRepository eventRepository, ILogger<EventController> logger, IMemoryCache cache)
         {
             _eventRepository = eventRepository;
             _logger = logger;
+            _cache = cache;
         }
 
         [AllowAnonymous]
         [HttpGet("GetAllEvents")]
         public async Task<IActionResult> GetAllEvents()
         {
-            _logger.LogInformation("📋 Fetching all events");
+            if (_cache.TryGetValue(AllEventsCacheKey, out IEnumerable<Event>? cachedEvents))
+            {
+                _logger.LogInformation("⚡ Returning {Count} events from Cache", cachedEvents!.Count());
+                return Ok(cachedEvents);
+            }
+            _logger.LogInformation("📋 Cache miss - Fetching all events from Database");
             var events = await _eventRepository.GetAllEventsAsync();
-            _logger.LogInformation("✅ Returned {Count} events", events.Count());
+            if(events != null)
+            {
+                _cache.Set(AllEventsCacheKey, events, TimeSpan.FromMinutes(5));
+                _logger.LogInformation("✅ Cached {Count} events for 5 minutes", events.Count());
+            }
+
             return Ok(events);
         }
 
@@ -34,8 +50,27 @@ namespace Eventify_High_Performance_Event_Management_API.Controller
         [HttpGet("GetAllEventsById/{id}")]
         public async Task<Event?> GetAllEventsById(int id)
         {
-            _logger.LogInformation("🔍 Fetching event {EventId}", id);
-            return await _eventRepository.GetEventByIdAsync(id);
+            string cacheKey = $"Event_{id}";
+
+            // ✅ تحقق إذا الحدث موجود في الـ Cache
+            if (_cache.TryGetValue(cacheKey, out Event? cachedEvent))
+            {
+                _logger.LogInformation("⚡ Returning Event {EventId} from Cache", id);
+                return cachedEvent;
+            }
+
+            // ❌ ما في Cache — روح قاعدة البيانات
+            _logger.LogInformation("🔍 Cache miss - Fetching Event {EventId} from Database", id);
+            var eventItem = await _eventRepository.GetEventByIdAsync(id);
+
+            if (eventItem != null)
+            {
+                // 💾 احفظ في الـ Cache لمدة 5 دقائق
+                _cache.Set(cacheKey, eventItem, TimeSpan.FromMinutes(5));
+                _logger.LogInformation("✅ Cached Event {EventId} for 5 minutes", id);
+            }
+
+            return eventItem;
         }
 
         [AllowAnonymous]
@@ -55,7 +90,9 @@ namespace Eventify_High_Performance_Event_Management_API.Controller
 
             if (await _eventRepository.CreateEventAsync(eventToAddDto))
             {
-                _logger.LogInformation("✅ Event '{Title}' added successfully", eventToAddDto.Title);
+                // 🗑️ امسح الـ Cache عشان يتحدث في المرة الجاية
+                _cache.Remove(AllEventsCacheKey);
+                _logger.LogInformation("✅ Event '{Title}' added - Cache cleared", eventToAddDto.Title);
                 return Ok("Event added successfully.");
             }
 
@@ -71,7 +108,10 @@ namespace Eventify_High_Performance_Event_Management_API.Controller
 
             if (await _eventRepository.UpdateEventAsync(id, eventToAddDto))
             {
-                _logger.LogInformation("✅ Event {EventId} updated successfully", id);
+                // 🗑️ امسح الـ Cache للحدث المحدد والقائمة الكاملة
+                _cache.Remove($"Event_{id}");
+                _cache.Remove(AllEventsCacheKey);
+                _logger.LogInformation("✅ Event {EventId} updated - Cache cleared", id);
                 return Ok("Event Updated successfully.");
             }
 
@@ -103,7 +143,10 @@ namespace Eventify_High_Performance_Event_Management_API.Controller
 
             if (await _eventRepository.DeleteEventAsync(id))
             {
-                _logger.LogInformation("✅ Event {EventId} deleted successfully by User {UserId}", id, currentUserId);
+                // 🗑️ امسح الـ Cache
+                _cache.Remove($"Event_{id}");
+                _cache.Remove(AllEventsCacheKey);
+                _logger.LogInformation("✅ Event {EventId} deleted - Cache cleared", id , currentUserId);
                 return Ok("Event deleted successfully.");
             }
 
@@ -115,8 +158,20 @@ namespace Eventify_High_Performance_Event_Management_API.Controller
         [HttpGet("DashboardStats")]
         public async Task<IActionResult> GetDashboardStats()
         {
-            _logger.LogInformation("📊 Admin fetching dashboard stats");
+            // ✅ تحقق إذا الإحصائيات موجودة في الـ Cache
+            if (_cache.TryGetValue(DashboardStatsCacheKey, out object? cachedStats))
+            {
+                _logger.LogInformation("⚡ Returning Dashboard Stats from Cache");
+                return Ok(cachedStats);
+            }
+
+            _logger.LogInformation("📊 Cache miss - Fetching Dashboard Stats from Database");
             var stats = await _eventRepository.GetDashboardStatsAsync();
+
+            // 💾 احفظ لمدة دقيقة وحدة فقط لأن الإحصائيات تتغير أكثر
+            _cache.Set(DashboardStatsCacheKey, stats, TimeSpan.FromMinutes(1));
+            _logger.LogInformation("✅ Cached Dashboard Stats for 1 minute");
+
             return Ok(stats);
         }
     }

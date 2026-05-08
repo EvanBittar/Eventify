@@ -8,7 +8,9 @@ using Eventify_High_Performance_Event_Management_API.Dtos;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 namespace Eventify.Tests
 {
@@ -16,13 +18,18 @@ namespace Eventify.Tests
     {
         private readonly Mock<IEventRepository> _mockRepo;
         private readonly Mock<ILogger<EventController>> _mockLogger;
+        private readonly IMemoryCache _cache;
         private readonly EventController _controller;
 
         public EventControllerTests()
         {
             _mockRepo = new Mock<IEventRepository>();
             _mockLogger = new Mock<ILogger<EventController>>();
-            _controller = new EventController(_mockRepo.Object, _mockLogger.Object);
+
+            // ✅ نستخدم MemoryCache حقيقي بدل Mock
+            _cache = new MemoryCache(new MemoryCacheOptions());
+
+            _controller = new EventController(_mockRepo.Object, _mockLogger.Object, _cache);
         }
 
         [Fact]
@@ -38,7 +45,7 @@ namespace Eventify.Tests
                 AverageRating = 4.5m,
                 ReviewsCount = 10 }
             };
-            _mockRepo.Setup(repo => repo.GetAllEventsAsync()).ReturnsAsync(fakeEvents);
+            _mockRepo.Setup(repo => repo.GetAllEventsAsync()).ReturnsAsync(fakeEvents.AsEnumerable());
 
             // Act
             var result = await _controller.GetAllEvents();
